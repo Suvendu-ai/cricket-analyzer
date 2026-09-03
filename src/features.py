@@ -55,11 +55,34 @@ def _team_venue_matches(conn, team_id, venue_id, before_date):
     ).fetchall()
 
 
+def _venue_matches(conn, venue_id, before_date):
+    """All decided matches at a venue (either team), strictly before `before_date`."""
+    placeholders = ",".join("?" * len(EXCLUDE_RESULTS))
+    return conn.execute(
+        f"""
+        SELECT result_type
+        FROM matches
+        WHERE venue_id = ?
+          AND date_start < ?
+          AND result_type IS NOT NULL
+          AND result_type NOT IN ({placeholders})
+        """,
+        (venue_id, before_date, *EXCLUDE_RESULTS),
+    ).fetchall()
+
+
 def _win_rate(rows, team_id):
     if not rows:
         return NEUTRAL_PRIOR
     wins = sum(1 for r in rows if r["winner_id"] == team_id)
     return wins / len(rows)
+
+
+def _draw_rate(rows):
+    if not rows:
+        return NEUTRAL_PRIOR
+    draws = sum(1 for r in rows if r["result_type"] in ("draw", "tie"))
+    return draws / len(rows)
 
 
 def _outcome_for(match_row, team_id):
@@ -100,11 +123,18 @@ def build_dataset(conn) -> pd.DataFrame:
 
     rows = []
     for m in matches:
-        for for_team, opp_team in ((m["team1_id"], m["team2_id"]), (m["team2_id"], m["team1_id"])):
-            history = _team_matches(conn, for_team, m["date_start"])
+        team1_history = _team_matches(conn, m["team1_id"], m["date_start"])
+        team2_history = _team_matches(conn, m["team2_id"], m["date_start"])
+        venue_draw_rate = _draw_rate(_venue_matches(conn, m["venue_id"], m["date_start"]))
 
-            recent_form = _win_rate(history[-RECENT_N:], for_team)
-            h2h = [r for r in history if opp_team in (r["team1_id"], r["team2_id"])]
+        perspectives = (
+            (m["team1_id"], m["team2_id"], team1_history, team2_history),
+            (m["team2_id"], m["team1_id"], team2_history, team1_history),
+        )
+        for for_team, opp_team, for_history, opp_history in perspectives:
+            recent_form = _win_rate(for_history[-RECENT_N:], for_team)
+            opp_recent_form = _win_rate(opp_history[-RECENT_N:], opp_team)
+            h2h = [r for r in for_history if opp_team in (r["team1_id"], r["team2_id"])]
             h2h_win_rate = _win_rate(h2h, for_team)
             venue_hist = _team_venue_matches(conn, for_team, m["venue_id"], m["date_start"])
             venue_win_rate = _win_rate(venue_hist, for_team)
@@ -116,8 +146,10 @@ def build_dataset(conn) -> pd.DataFrame:
                     "for_team": for_team,
                     "opp_team": opp_team,
                     "recent_form": recent_form,
+                    "opp_recent_form": opp_recent_form,
                     "h2h_win_rate": h2h_win_rate,
                     "venue_win_rate": venue_win_rate,
+                    "venue_draw_rate": venue_draw_rate,
                     "won_toss": int(m["toss_winner_id"] == for_team),
                     "batted_first": _batted_first(m, for_team),
                     "outcome": _outcome_for(m, for_team),

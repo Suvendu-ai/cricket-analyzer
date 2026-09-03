@@ -19,7 +19,10 @@ from sklearn.preprocessing import StandardScaler
 from db import get_connection
 from features import build_dataset
 
-FEATURE_COLS = ["recent_form", "h2h_win_rate", "venue_win_rate", "won_toss", "batted_first"]
+FEATURE_COLS = [
+    "recent_form", "opp_recent_form", "h2h_win_rate",
+    "venue_win_rate", "venue_draw_rate", "won_toss", "batted_first",
+]
 TEST_FRACTION = 0.2  # most recent 20% of matches, by date, held out for testing
 MODEL_PATH = Path(__file__).resolve().parent.parent / "data" / "win_draw_loss_model.pkl"
 
@@ -61,6 +64,15 @@ def train_and_evaluate(df: pd.DataFrame):
     print(f"\nAccuracy: {acc:.3f}   (baseline -- always predict '{baseline_class}': {baseline_acc:.3f})")
     print(f"Log loss: {ll:.3f}")
     print("\n" + classification_report(y_test, pred, zero_division=0))
+
+    print("Calibration check -- mean predicted probability vs actual frequency in the test set.")
+    print("(This matters more than the classification report above: the WTC simulator uses")
+    print(" these probabilities directly for expected points, it never needs a single predicted label.)")
+    proba_df = pd.DataFrame(proba, columns=model.classes_)
+    for cls in model.classes_:
+        mean_pred = proba_df[cls].mean()
+        actual = (y_test == cls).mean()
+        print(f"  {cls:>5}:  predicted {mean_pred:.3f}   |   actual {actual:.3f}")
 
     return model
 
