@@ -25,7 +25,7 @@ FEATURE_COLS = [
     "venue_win_rate", "venue_draw_rate", "won_toss", "batted_first",
 ]
 TEST_FRACTION = 0.2  # most recent 20% of matches, by date, held out for testing
-HALF_LIFE_YEARS = 5  # a training match this many years before the reference date gets half the weight
+HALF_LIFE_YEARS = 3  # a training match this many years before the reference date gets half the weight
 MODEL_PATH = Path(__file__).resolve().parent.parent / "data" / "win_draw_loss_model.pkl"
 
 

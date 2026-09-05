@@ -54,6 +54,13 @@ real archive; it's a plain HTTPS download, nothing else needed.
   player registry — name variants across seasons aren't merged yet.
 - "Won by an innings" results store the runs/wickets margin but not the
   innings count itself.
+- The win/draw/loss model's predicted draw probability runs a bit high
+  relative to the most recent era (~0.16 predicted vs ~0.11 actual on the
+  2022+ test slice), even after recency-weighted training. Direction is
+  correct and log loss beats the naive baseline; the residual gap is
+  likely down to a genuinely thin recent-draws sample rather than a fixable
+  bug — pushing the recency half-life shorter than ~3 years starts
+  overfitting noise instead of reducing the gap further.
 
 ## Data source
 
