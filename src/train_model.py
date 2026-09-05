@@ -10,6 +10,7 @@ the outcome of yet, and a random split wouldn't actually test that.
 import pickle
 from pathlib import Path
 
+import numpy as np
 import pandas as pd
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import accuracy_score, classification_report, log_loss
@@ -24,7 +25,17 @@ FEATURE_COLS = [
     "venue_win_rate", "venue_draw_rate", "won_toss", "batted_first",
 ]
 TEST_FRACTION = 0.2  # most recent 20% of matches, by date, held out for testing
+HALF_LIFE_YEARS = 5  # a training match this many years before the reference date gets half the weight
 MODEL_PATH = Path(__file__).resolve().parent.parent / "data" / "win_draw_loss_model.pkl"
+
+
+def _recency_weights(dates: pd.Series, reference_date) -> np.ndarray:
+    """Exponential decay: weight 1.0 right at `reference_date`, halving every
+    HALF_LIFE_YEARS further back. Lets training lean toward the current era
+    without discarding older matches outright."""
+    days_before = (pd.to_datetime(reference_date) - pd.to_datetime(dates)).dt.days
+    years_before = (days_before / 365.25).clip(lower=0)
+    return (0.5 ** (years_before / HALF_LIFE_YEARS)).to_numpy()
 
 
 def time_split(df: pd.DataFrame):
@@ -45,12 +56,14 @@ def train_and_evaluate(df: pd.DataFrame):
 
     X_train, y_train = train[FEATURE_COLS], train["outcome"]
     X_test, y_test = test[FEATURE_COLS], test["outcome"]
+    sample_weight = _recency_weights(train["date"], cutoff_date)
+    print(f"Recency weights range {sample_weight.min():.3f} (oldest) to {sample_weight.max():.3f} (near cutoff)")
 
     model = Pipeline([
         ("scale", StandardScaler()),
         ("clf", LogisticRegression(max_iter=1000)),
     ])
-    model.fit(X_train, y_train)
+    model.fit(X_train, y_train, clf__sample_weight=sample_weight)
 
     pred = model.predict(X_test)
     proba = model.predict_proba(X_test)
