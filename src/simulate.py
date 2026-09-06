@@ -1,13 +1,6 @@
 """
 Projects the WTC 2025-27 table forward using the trained win/draw/loss
 model, given a list of remaining fixtures.
-
-Two features the model was trained on -- won_toss, batted_first -- are
-genuinely unknowable in advance for a fixture that hasn't been played yet
-(the toss hasn't happened). Both default to 0.5, i.e. "unknown, treat as
-50-50", rather than guessed. This is a real simplification: it means the
-model can't express "team X does especially well when they win the toss",
-only the average case.
 """
 
 import sqlite3
@@ -71,8 +64,6 @@ def predict_fixture(model, conn, team1_name: str, team2_name: str, venue_name: s
         "h2h_win_rate": h2h_win_rate,
         "venue_win_rate": venue_win_rate,
         "venue_draw_rate": venue_draw_rate,
-        "won_toss": 0.5,
-        "batted_first": 0.5,
     }])
     proba = model.predict_proba(row)[0]
     return dict(zip(model.classes_, proba))

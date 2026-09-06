@@ -20,10 +20,12 @@ from sklearn.preprocessing import StandardScaler
 from db import get_connection
 from features import build_dataset
 
-FEATURE_COLS = [
-    "recent_form", "opp_recent_form", "h2h_win_rate",
-    "venue_win_rate", "venue_draw_rate", "won_toss", "batted_first",
-]
+FEATURE_COLS = ["recent_form", "opp_recent_form", "h2h_win_rate", "venue_win_rate", "venue_draw_rate"]
+# won_toss/batted_first are deliberately excluded here: they're real signal for a
+# match that's already happened, but genuinely unknowable in advance for a future
+# fixture (the toss hasn't happened). Training on them and approximating with 0.5
+# at inference time created a train/predict mismatch rather than solving anything --
+# features.py still computes them for exploration, just not used for training.
 TEST_FRACTION = 0.2  # most recent 20% of matches, by date, held out for testing
 HALF_LIFE_YEARS = 3  # a training match this many years before the reference date gets half the weight
 MODEL_PATH = Path(__file__).resolve().parent.parent / "data" / "win_draw_loss_model.pkl"
