@@ -61,6 +61,16 @@ real archive; it's a plain HTTPS download, nothing else needed.
   likely down to a genuinely thin recent-draws sample rather than a fixable
   bug — pushing the recency half-life shorter than ~3 years starts
   overfitting noise instead of reducing the gap further.
+- `simulate.py`'s fixture predictions default `won_toss`/`batted_first` to
+  0.5 (unknown) — genuinely unknowable in advance, since the toss hasn't
+  happened yet for a future match. The model can't express "this team
+  does especially well batting first" for projected fixtures, only the
+  average case.
+- `KNOWN_UPCOMING_FIXTURES` in `simulate.py` is a manually-checked snapshot
+  of real near-term fixtures (through Dec 2026), not the complete
+  remaining 2025-27 WTC schedule (~58 more matches through June 2027). A
+  true qualification-odds simulation needs that full list from an
+  authoritative source.
 
 ## Data source
 
