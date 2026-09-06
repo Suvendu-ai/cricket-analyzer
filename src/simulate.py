@@ -111,21 +111,29 @@ def project_standings(model, conn, remaining_fixtures: list[dict], as_of: str = 
     return rows
 
 
-# A snapshot of real, confirmed near-term fixtures (through Dec 2026) as of
-# this writing -- NOT the complete remaining 2025-27 schedule. Extending
-# this to the full ~58 remaining matches through June 2027 is the natural
-# next step, from an authoritative source rather than search snippets.
-KNOWN_UPCOMING_FIXTURES = [
-    {"team1": "England", "team2": "Pakistan", "venue": "Edgbaston"},
-    {"team1": "South Africa", "team2": "Australia", "venue": "Kingsmead"},
-    {"team1": "South Africa", "team2": "Australia", "venue": None},  # Gqeberha, venue name may differ in Cricsheet
-    {"team1": "South Africa", "team2": "Australia", "venue": None},  # Cape Town
-    {"team1": "South Africa", "team2": "Bangladesh", "venue": None},  # Johannesburg
-    {"team1": "South Africa", "team2": "Bangladesh", "venue": None},  # Centurion
-    {"team1": "New Zealand", "team2": "India", "venue": None},  # Wellington
-    {"team1": "New Zealand", "team2": "India", "venue": None},  # Christchurch
-    {"team1": "Australia", "team2": "New Zealand", "venue": None},  # Perth
-]
+# Remaining (not-yet-completed) fixtures in the 2025-27 WTC cycle, sourced
+# from cricinfo's series-details page for this tournament (accessed via
+# search, not scraped live -- re-verify before relying on this for anything
+# beyond this project). This covers 12 of the ~15-16 series still to come;
+# a handful more likely exist that didn't surface in the source snippet.
+# Venue is left unset throughout (falls back to the neutral prior) since
+# this source gives series-level dates, not per-match venues.
+KNOWN_UPCOMING_FIXTURES = (
+    [{"team1": "South Africa", "team2": "Australia", "venue": None}] * 3       # from 9 Oct 2026
+    + [{"team1": "Bangladesh", "team2": "West Indies", "venue": None}] * 2     # from 28 Oct 2026
+    + [{"team1": "South Africa", "team2": "Bangladesh", "venue": None}] * 2    # from 15 Nov 2026
+    + [{"team1": "New Zealand", "team2": "India", "venue": None}] * 2          # from 19 Nov 2026
+    + [{"team1": "Pakistan", "team2": "Sri Lanka", "venue": None}] * 2         # Nov 2026
+    + [{"team1": "Australia", "team2": "New Zealand", "venue": None}] * 4      # from 9 Dec 2026
+    + [{"team1": "South Africa", "team2": "England", "venue": None}] * 3       # from 17 Dec 2026
+    + [{"team1": "India", "team2": "Australia", "venue": None}] * 5            # from 21 Jan 2027
+    + [{"team1": "New Zealand", "team2": "Sri Lanka", "venue": None}] * 2      # from 4 Feb 2027
+    + [{"team1": "Bangladesh", "team2": "England", "venue": None}] * 2         # Feb 2027
+    + [{"team1": "Sri Lanka", "team2": "South Africa", "venue": None}] * 2     # Feb 2027
+    + [{"team1": "Pakistan", "team2": "New Zealand", "venue": None}] * 2       # Mar 2027
+    + [{"team1": "England", "team2": "Pakistan", "venue": None}] * 1           # 3rd Test of a series
+                                                                                 # already 2-0 to England
+)
 
 
 if __name__ == "__main__":
