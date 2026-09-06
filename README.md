@@ -61,11 +61,22 @@ real archive; it's a plain HTTPS download, nothing else needed.
   likely down to a genuinely thin recent-draws sample rather than a fixable
   bug — pushing the recency half-life shorter than ~3 years starts
   overfitting noise instead of reducing the gap further.
-- `simulate.py`'s fixture predictions default `won_toss`/`batted_first` to
-  0.5 (unknown) — genuinely unknowable in advance, since the toss hasn't
-  happened yet for a future match. The model can't express "this team
-  does especially well batting first" for projected fixtures, only the
-  average case.
+- `won_toss`/`batted_first` are computed by `features.py` but deliberately
+  NOT used to train the model — real signal for a match that's already
+  happened, but unknowable in advance for a fixture that hasn't been
+  played yet. Training on them and approximating with 0.5 at prediction
+  time created a train/predict mismatch rather than solving anything.
+- Tried gradient boosting (`HistGradientBoostingClassifier`) in place of
+  logistic regression, hoping nonlinear feature interactions would help
+  separate draws. It did — draw recall moved off zero for the first time
+  — but log loss and overall accuracy both got worse, and the draw
+  calibration gap widened rather than closed. With only ~1400 training
+  rows, the extra flexibility likely overfit rather than found real
+  signal. Reverted to logistic regression, which wins on the metrics
+  that matter for the simulator (log loss, calibration) despite never
+  picking draw as its single most likely outcome. Worth revisiting once
+  there's meaningfully more data (e.g. once ODI/T20I are added, or as
+  more of the 2025-27 cycle is played).
 - `KNOWN_UPCOMING_FIXTURES` in `simulate.py` is a manually-checked snapshot
   of real near-term fixtures (through Dec 2026), not the complete
   remaining 2025-27 WTC schedule (~58 more matches through June 2027). A
